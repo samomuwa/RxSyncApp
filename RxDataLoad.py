@@ -21,7 +21,7 @@ path=os.path.dirname(os.path.realpath(__file__))+'/RxDataLoad.ini'
 #prepare logfile
 logFileName = datetime.datetime.today().date()
 logger = logging.getLogger(str(logFileName))
-hdlr = logging.FileHandler('logs\\%s.log'%(logFileName))
+hdlr = logging.FileHandler(os.path.dirname(os.path.realpath(__file__))+'\\logs\\%s.log'%(logFileName))
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
@@ -1003,7 +1003,7 @@ def updateLocalMedicines(Config):
 					 ,[StorageTemp_str] = ?
 					  ,[StorageConditions_str] = ?
 					  ,[Administration_str] = ?
-					  ,[InstitutionEDL_bol] = ?
+					  --,[InstitutionEDL_bol] = ?
 					  ,[Group1_str] = ?
 					  ,[Group2_str] = ?
 					  ,[Strength_str] = ?
@@ -1058,7 +1058,7 @@ def updateLocalMedicines(Config):
 				,masterDataDict[drug].StorageTemperature
 				,masterDataDict[drug].StorageConditions
 				,masterDataDict[drug].AdministrationUnit
-				,0
+				
 				,masterDataDict[drug].group1
 				,masterDataDict[drug].group2
 				,masterDataDict[drug].Strength_Display
@@ -1258,7 +1258,7 @@ def updateLocalMedicines(Config):
 print (datetime.datetime.now())
 #update prodcut catalog
 updateLocalMedicines(Config)
-#sendDataToRemoteServer(Config)
+sendDataToRemoteServer(Config)
 #send prodct catalog update report
 #get email addresses to contacts
 cnxnMaster = pyodbc.connect('''DRIVER={%s};
