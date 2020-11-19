@@ -1,7 +1,7 @@
 import datetime
 import sys
 import  pyodbc
-import ConfigParser
+import configparser as ConfigParser
 import logging
 import os
 import smtplib
@@ -208,7 +208,7 @@ def updateLocalMedicines(Config):
 	#synchronize generic name ranges, pack size ranges, strength ranges,formulation ranges
 	SyncOtherTables(cursorFacility,cursorMaster,Config,logger)
 	#remove products from facilty before quering the facility database
-
+	'''
 	cursorMaster.execute("""select Code
 								,[Facility Medicine Description] description
 								,[LastChgUserName]
@@ -250,7 +250,7 @@ def updateLocalMedicines(Config):
 
 		except Exception as e:
 			logger.error('failed to insert product for cleaning')
-			logger.error(e)
+			logger.error(e)'''
 	#run staged data to delete items removed at the facility from corrected list
 	#cursorMaster.execute("EXEC [MDM-01].[MDS_PD].[stg].[udp_CleanMedicinesAtFacility_Leaf] @VersionName = N'VERSION_1',@LogFlag = 1,@BatchTag ='deleteProductAtFacility'")
 	#cursorMaster.commit()	
@@ -269,26 +269,28 @@ def updateLocalMedicines(Config):
 	facilityCodes=[]
 	for row in  cursorFacility:
 		if row.ProductReportCode:
-			facilityCodes.append(str(row.ProductReportCode).encode('ascii', 'ignore'))
-		#load medicines
-		if row.DMO_str =="D":
-			medsFacility.append(str(row.ProductReportCode).encode('ascii', 'ignore'))
-			medsFacilityDict.update({str(row.ProductReportCode).encode('ascii', 'ignore'):row})
-			
-			#keep all the drugs that dont have a unique code from master data for updating 
-			if row.ProductReportCode == None:
+			if row.DMO_str =="D":
+				facilityCodes.append(str(row.ProductReportCode))
+				#load medicines
+				medsFacility.append(str(row.ProductReportCode))
+				medsFacilityDict.update({str(row.ProductReportCode):row})
+			else:
+				facilityCodes.append('LAB'+str(row.ProductReportCode).replace('LAB',''))
+				itemsFacility.append('LAB'+str(row.ProductReportCode).replace('LAB',''))
+				itemsFacilityDict.update({'LAB'+str(row.ProductReportCode).replace('LAB',''):row})
+				medsFacilityDict.update({'LAB'+str(row.ProductReportCode).replace('LAB',''):row})
+		else:
+			if row.DMO_str =="D":
+				#keep all the drugs that dont have a unique code from master data for updating 
+				#if row.ProductReportCode == None:
 				medsFacilityDictNoReportCode.append(row.ProductReportCode)
-		elif row.DMO_str != "D":
-			itemsFacility.append(str(row.ProductReportCode).encode('ascii', 'ignore'))
-			itemsFacilityDict.update({str(row.ProductReportCode).encode('ascii', 'ignore'):row})
-			medsFacilityDict.update({str(row.ProductReportCode).encode('ascii', 'ignore'):row})
-			#keep all the lab items that dont have a unique code from master data for updating 
-			if row.ProductReportCode == None:
+				#keep all the lab items that dont have a unique code from master data for updating 
+			else:
 				itemsFacilityDictNoReportCode.append(row.ProductReportCode)
 	#find duplicates at the facility one is turned on and one off 
 	#delete on turned off maintain on turned on i.e InstitutionEDL_bol=1
 	#and drugs to be deleted instruction coming from master data i.e toDeleteDrugs[] should be populated
-	for x in (set(medsFacility)|set(itemsFacility)) :
+	'''for x in (set(medsFacility)|set(itemsFacility)) :
 		if x not in seen :
 			uniq.append(x)
 			seen.add(x)
@@ -303,7 +305,7 @@ def updateLocalMedicines(Config):
 			data=(medsFacilityDict[x].Description_str)
 			cursorFacility.execute(sqlx,data)
 			cursorFacility.commit()
-	
+	'''
 	#print dup
 	#print len(dup)
 	#print medsFacilityDict
@@ -317,7 +319,7 @@ def updateLocalMedicines(Config):
 	masterDataLabDict={}
 	masterDataCodes=[]
 	#add new  products in master data before querying master data
-	cursorMaster.execute(""" select
+	'''cursorMaster.execute(""" select
        [Name]
       ,[Code]
       ,[ChangeTrackingMask]
@@ -479,7 +481,7 @@ def updateLocalMedicines(Config):
 				logger.error('Failed delete deleteCorrectionAutoCreate')
 				logger.error(e)
 				#continue
-		Code=Code+1	
+		Code=Code+1	'''
 	#Also delete the product that was created as a new product before corrections were made	
 	#update the medicine list
 	#cursorMaster.execute("EXEC [MDM-01].[MDS_PD].[stg].[udp_MedicineProductCatlog_Leaf] @VersionName = N'VERSION_1',@LogFlag = 1,@BatchTag ='AddToMDS'")	
@@ -715,9 +717,9 @@ def updateLocalMedicines(Config):
 	medsToReplace=[]
 	cursorMaster.execute(sql)
 	for row in  cursorMaster.fetchall():
-		masterDataCodes.append(str(row.Code).encode('ascii', 'ignore'))
-		masterDataMeds.append(str(row.Code).encode('ascii', 'ignore'))
-		masterDataMedsDict.update({str(row.Code).encode('ascii', 'ignore'):row})
+		masterDataCodes.append(str(row.Code))
+		masterDataMeds.append(str(row.Code))
+		masterDataMedsDict.update({str(row.Code):row})
 		#get Drugs updated in MDM from last check point
 		if datetime.datetime.strptime(xstr(row.LastChgDateTime).split('.')[0],'%Y-%m-%d %H:%M:%S') > datetime.datetime.strptime(Config.get('checkPoint','cataloglastupdate'),'%Y-%m-%d %H:%M:%S') or datetime.datetime.strptime(xstr(row.pkLastChgDateTime).split('.')[0],'%Y-%m-%d %H:%M:%S') > datetime.datetime.strptime(Config.get('checkPoint','cataloglastupdate'),'%Y-%m-%d %H:%M:%S') or datetime.datetime.strptime(xstr(row.gnLastChgDateTime).split('.')[0],'%Y-%m-%d %H:%M:%S') > datetime.datetime.strptime(Config.get('checkPoint','cataloglastupdate'),'%Y-%m-%d %H:%M:%S') or datetime.datetime.strptime(xstr(row.sgLastChgDateTime).split('.')[0],'%Y-%m-%d %H:%M:%S') > datetime.datetime.strptime(Config.get('checkPoint','cataloglastupdate'),'%Y-%m-%d %H:%M:%S') or datetime.datetime.strptime(xstr(row.fmLastChgDateTime).split('.')[0],'%Y-%m-%d %H:%M:%S') > datetime.datetime.strptime(Config.get('checkPoint','cataloglastupdate'),'%Y-%m-%d %H:%M:%S') or datetime.datetime.strptime(xstr(row.admLastChgDateTime).split('.')[0],'%Y-%m-%d %H:%M:%S') > datetime.datetime.strptime(Config.get('checkPoint','cataloglastupdate'),'%Y-%m-%d %H:%M:%S'):
 			updatedDrugs.append(row.Code)
@@ -832,22 +834,25 @@ def updateLocalMedicines(Config):
 	updatedLabItems=[]
 	cursorMaster.execute(sqlLab)
 	for row in  cursorMaster.fetchall():
-		masterDataCodes.append(str(row.Code).encode('ascii', 'ignore'))
-		masterDataLab.append(str(row.Code).encode('ascii', 'ignore'))
-		masterDataLabDict.update({str(row.Code).encode('ascii', 'ignore'):row})
+		masterDataCodes.append(str(row.Code) if 'LAB' in str(row.Code) else 'LAB'+str(row.Code))
+		masterDataLab.append(str(row.Code) if 'LAB' in str(row.Code) else 'LAB'+str(row.Code))
+		masterDataLabDict.update({str(row.Code) if 'LAB' in str(row.Code) else 'LAB'+str(row.Code):row})
 		#get Drugs updated in MDM from last check point
 		if datetime.datetime.strptime(xstr(row.LastChgDateTime).split('.')[0],'%Y-%m-%d %H:%M:%S') > datetime.datetime.strptime(Config.get('checkPoint','cataloglastupdate'),'%Y-%m-%d %H:%M:%S') or datetime.datetime.strptime(xstr(row.pkLastChgDateTime).split('.')[0],'%Y-%m-%d %H:%M:%S') > datetime.datetime.strptime(Config.get('checkPoint','cataloglastupdate'),'%Y-%m-%d %H:%M:%S') or datetime.datetime.strptime(xstr(row.gnLastChgDateTime).split('.')[0],'%Y-%m-%d %H:%M:%S') > datetime.datetime.strptime(Config.get('checkPoint','cataloglastupdate'),'%Y-%m-%d %H:%M:%S'):
-			updatedLabItems.append(row.Code)
+			updatedLabItems.append(str(row.Code) if 'LAB' in str(row.Code) else 'LAB'+str(row.Code))
 	
 	facSet = set(medsFacility)
 	facSetLab = set(itemsFacility)
 	masterSetDrugs = set(masterDataMeds)
 	masterSetLab = set(masterDataLab)
 	#get any updated products
-	interProdsNoCodes=masterSetDrugs.intersection(set(medsFacilityDictNoReportCode))
-	interProdsLabNoCodes=masterSetLab.intersection(set(itemsFacilityDictNoReportCode))
+	interProdsCodes=masterSetDrugs.intersection(set(medsFacility))
+	interProdsLabCodes=masterSetLab.intersection(set(itemsFacility))
+	
 	#exlude products whose  description has been update
 	codesIntersection=set(facilityCodes).intersection(set(masterDataCodes))
+	#logger.info("intersection is")
+	#logger.info(codesIntersection)
 	#assing codes from master data to effectively identify a drug across all facilities
 	#also update drugs that have changed in MDS since the last sync date 
 	#print len(interProdsLabNoCodes)
@@ -866,7 +871,7 @@ def updateLocalMedicines(Config):
 	dataUpdatedLabs=[]
 	dataUpdatedDrugs=[]
 	dataErrorUpdate=[]
-	for drug in interProdsNoCodes | set(updatedDrugs) | set(interProdsLabNoCodes) | set(updatedLabItems) | set(medsToReplaceDict.keys()):
+	for drug in interProdsCodes | set(updatedDrugs) | set(interProdsLabCodes) | set(updatedLabItems) | set(medsToReplaceDict.keys()):
 		try:
 			venDict={4:masterDataDict[drug].VenGeneralHospital_Name
 			,5:masterDataDict[drug].VenRegionalReferal_Name
@@ -877,7 +882,7 @@ def updateLocalMedicines(Config):
 			}
 			#print xstr(venDict[int(Config.get('HealthFacility','levelOfCare'))])[:1]
 
-			
+			'''
 			#check if this is a replace case from cleaning or not  and change key appropriatly
 			keyDescription=''
 			if drug in medsToReplaceDict.keys():
@@ -901,7 +906,7 @@ def updateLocalMedicines(Config):
 				cursorFacility.commit()
 			else:
 				keyDescription=drug
-			
+			'''
 			
 
 			if masterDataDict[drug].Code  in codesIntersection:
@@ -956,7 +961,8 @@ def updateLocalMedicines(Config):
 					where description_str = ?
 							'''
 				else:"""
-				keyDescription=str(masterDataDict[drug].Code).encode('ascii', 'ignore')
+				keyDescription=str(row.Code) if 'LAB' in str(row.Code) else 'LAB'+str(row.Code) if masterDataDict[drug].itemClass !="D" else str(masterDataDict[drug].Code)
+				#logger.error(keyDescription)
 				sqlNewProd='''update tblProductPackSize
 					set
 					  	[GenericCode_str] = ?
@@ -1005,70 +1011,72 @@ def updateLocalMedicines(Config):
 					  ,description_str=?
 					  ,[Cost_mon] = ?
 					  ,[ContractCode_str] = ?
-					where [ProductReportCode]=?'''
-			#logger.info(sqlNewProd)
-			productCode=xstr(masterDataDict[drug].FormulationRange_Code)+xstr(masterDataDict[drug].GenericNameRange_Code)+xstr(masterDataDict[drug].StrengthRange_Code)+xstr(masterDataDict[drug].PackSizeRange_Code)
-			prodDesc=(masterDataDict[drug].GenericName)+' '+xstr(masterDataDict[drug].Strength_Display)+'('+xstr(masterDataDict[drug].DispensingFormDisplay)+')['+xstr(masterDataDict[drug].PackSize) +' '+xstr(masterDataDict[drug].packsizeunit_Name)+']'
-			if masterDataDict[drug].TradeName and masterDataDict[drug].TradeName !='na':
-				prodDesc+=' (%s)'%(masterDataDict[drug].TradeName)
-			dataNewProd=(
-			 masterDataDict[drug].GenericNameRange_Code
-			 ,masterDataDict[drug].FormulationRange_Code
-			 ,masterDataDict[drug].PackSizeRange_Code
-			 ,masterDataDict[drug].StrengthRange_Code
-			 ,productCode[:7]
-			 ,productCode
-			 ,1
-			 ,1
-			,masterDataDict[drug].Code
-			,masterDataDict[drug].GenericName
-			,masterDataDict[drug].StrengthUnit_Name
-			,masterDataDict[drug].DispensingFormDisplay
-			,masterDataDict[drug].Route_Name
-			,masterDataDict[drug].packsizeunit_Name
-			,masterDataDict[drug].DispensingUnitName
-			,masterDataDict[drug].StrengthValue
-			,masterDataDict[drug].PackSizeValue
-			,masterDataDict[drug].DispensingValue
-			,(masterDataDict[drug].GenericName)+' '+xstr(masterDataDict[drug].Strength_Display)+'('+xstr(masterDataDict[drug].DispensingFormDisplay)+')['+xstr(masterDataDict[drug].PackSize) +' '+xstr(masterDataDict[drug].packsizeunit_Name)+']'
-			,masterDataDict[drug].DispensingForm_Name
-			,masterDataDict[drug].DispensedUnit_Name
-			,masterDataDict[drug].DispensingValue
-			,(masterDataDict[drug].GenericName)+' '+xstr(masterDataDict[drug].Strength_Display)+'; '+xstr(masterDataDict[drug].DispensingFormDisplay)+' ['+xstr(masterDataDict[drug].Route_Name)+']'
-			,xstr(masterDataDict[drug].NMSCode)
-			,xstr(masterDataDict[drug].JMSCode)
-			,masterDataDict[drug].Refrigerated_Code
-			,xstr(venDict[int(Config.get('HealthFacility','levelOfCare'))])[:1]
-			,masterDataDict[drug].Supplement_Code
-			,masterDataDict[drug].Injectable_Code
-			,masterDataDict[drug].LastChgDateTime
-			,masterDataDict[drug].LastChgUserName
-			,masterDataDict[drug].PackSize
-			,masterDataDict[drug].ShippingPack
-			,masterDataDict[drug].ATCcode 
-			,masterDataDict[drug].whoClass
-			,masterDataDict[drug].StorageTemperature
-			,masterDataDict[drug].StorageConditions
-			,masterDataDict[drug].AdministrationUnit
-			,1
-			,masterDataDict[drug].group1
-			,masterDataDict[drug].group2
-			,masterDataDict[drug].Strength_Display
-			,masterDataDict[drug].TradeName
-			,prodDesc
-			,masterDataDict[drug].Cost
-			,masterDataDict[drug].contractCode
-			,keyDescription)
-			logger.info(masterDataDict[drug].whoClass)
-			logger.info(dataNewProd)
-			cursorFacility.execute(sqlNewProd,dataNewProd)
-			cnxnFacility.commit()
-			cnxnMaster.commit()
-			if str(masterDataDict[drug].Code).encode('ascii','ignore') in updatedLabItems:
-				dataUpdatedLabs.append([masterDataDict[drug].GenericName,prodDesc,masterDataDict[drug].EnterUserName,masterDataDict[drug].EnterDateTime])	
-				#writeXlxFile(,head,data,'%s product catelog sync report'%(Config.get('HealthFacility','Name'))})
-			elif str(masterDataDict[drug].Code).encode('ascii','ignore') in updatedDrugs:
-				dataUpdatedDrugs.append([masterDataDict[drug].GenericName,prodDesc,masterDataDict[drug].LastChgUserName,masterDataDict[drug].LastChgDateTime])
+					where [ProductReportCode]=?
+					'''
+				logger.info("updating product ....")
+				
+				productCode=xstr(masterDataDict[drug].FormulationRange_Code)+xstr(masterDataDict[drug].GenericNameRange_Code)+xstr(masterDataDict[drug].StrengthRange_Code)+xstr(masterDataDict[drug].PackSizeRange_Code)
+				prodDesc=(masterDataDict[drug].GenericName)+' '+xstr(masterDataDict[drug].Strength_Display)+'('+xstr(masterDataDict[drug].DispensingFormDisplay)+')['+xstr(masterDataDict[drug].PackSize) +' '+xstr(masterDataDict[drug].packsizeunit_Name)+']'
+				if masterDataDict[drug].TradeName and masterDataDict[drug].TradeName !='na':
+					prodDesc+=' (%s)'%(masterDataDict[drug].TradeName)
+				dataNewProd=(
+				masterDataDict[drug].GenericNameRange_Code
+				,masterDataDict[drug].FormulationRange_Code
+				,masterDataDict[drug].PackSizeRange_Code
+				,masterDataDict[drug].StrengthRange_Code
+				,productCode[:7]
+				,productCode
+				,1
+				,1
+				,masterDataDict[drug].Code
+				,masterDataDict[drug].GenericName
+				,masterDataDict[drug].StrengthUnit_Name
+				,masterDataDict[drug].DispensingFormDisplay
+				,masterDataDict[drug].Route_Name
+				,masterDataDict[drug].packsizeunit_Name
+				,masterDataDict[drug].DispensingUnitName
+				,masterDataDict[drug].StrengthValue
+				,masterDataDict[drug].PackSizeValue
+				,masterDataDict[drug].DispensingValue
+				,(masterDataDict[drug].GenericName)+' '+xstr(masterDataDict[drug].Strength_Display)+'('+xstr(masterDataDict[drug].DispensingFormDisplay)+')['+xstr(masterDataDict[drug].PackSize) +' '+xstr(masterDataDict[drug].packsizeunit_Name)+']'
+				,masterDataDict[drug].DispensingForm_Name
+				,masterDataDict[drug].DispensedUnit_Name
+				,masterDataDict[drug].DispensingValue
+				,(masterDataDict[drug].GenericName)+' '+xstr(masterDataDict[drug].Strength_Display)+'; '+xstr(masterDataDict[drug].DispensingFormDisplay)+' ['+xstr(masterDataDict[drug].Route_Name)+']'
+				,xstr(masterDataDict[drug].NMSCode)
+				,xstr(masterDataDict[drug].JMSCode)
+				,masterDataDict[drug].Refrigerated_Code
+				,xstr(venDict[int(Config.get('HealthFacility','levelOfCare'))])[:1]
+				,masterDataDict[drug].Supplement_Code
+				,masterDataDict[drug].Injectable_Code
+				,masterDataDict[drug].LastChgDateTime
+				,masterDataDict[drug].LastChgUserName
+				,masterDataDict[drug].PackSize
+				,masterDataDict[drug].ShippingPack
+				,masterDataDict[drug].ATCcode 
+				,masterDataDict[drug].whoClass
+				,masterDataDict[drug].StorageTemperature
+				,masterDataDict[drug].StorageConditions
+				,masterDataDict[drug].AdministrationUnit
+				,0
+				,masterDataDict[drug].group1
+				,masterDataDict[drug].group2
+				,masterDataDict[drug].Strength_Display
+				,masterDataDict[drug].TradeName
+				,prodDesc
+				,masterDataDict[drug].Cost
+				,masterDataDict[drug].contractCode
+				,keyDescription)
+				#logger.info(masterDataDict[drug].whoClass)
+				logger.info(dataNewProd)
+				cursorFacility.execute(sqlNewProd,dataNewProd)
+				cnxnFacility.commit()
+				cnxnMaster.commit()
+				if str(masterDataDict[drug].Code).encode('ascii','ignore') in updatedLabItems:
+					dataUpdatedLabs.append([masterDataDict[drug].GenericName,prodDesc,masterDataDict[drug].EnterUserName,masterDataDict[drug].EnterDateTime])	
+					#writeXlxFile(,head,data,'%s product catelog sync report'%(Config.get('HealthFacility','Name'))})
+				elif str(masterDataDict[drug].Code).encode('ascii','ignore') in updatedDrugs:
+					dataUpdatedDrugs.append([masterDataDict[drug].GenericName,prodDesc,masterDataDict[drug].LastChgUserName,masterDataDict[drug].LastChgDateTime])
 		except Exception as e:
 			logger.error("Failed to update  %s product see data below"%(masterDataDict[drug].Description))
 			logger.error(e)
@@ -1098,8 +1106,8 @@ def updateLocalMedicines(Config):
 	#get new medcines in master data that the facility dose not have
 	newProducts=(masterSetDrugs-facSet) | (masterSetLab - facSetLab)
 
-	logger.info(newProducts)
-	logger.info(codesIntersection)
+	#logger.info(newProducts)
+	#logger.info(codesIntersection)
 	errorNewProd=[]
 	newProductsData=[]
 	if len(newProducts)>0:#of there are new products add the to the facility list
@@ -1107,7 +1115,7 @@ def updateLocalMedicines(Config):
 			#writeXlxFile(,head,data,'%s product catelog sync report'%(Config.get('HealthFacility','Name'))})
 			#print drug
 			#exlude products whose  description has been update
-			if str(masterDataDict[drug].Code).encode('ascii', 'ignore') not in codesIntersection:
+			if str(masterDataDict[drug].Code) not in codesIntersection:
 				try:
 					#enforce level of care 
 					#no faclility gets prodcut above its level of care
@@ -1186,7 +1194,7 @@ def updateLocalMedicines(Config):
 						,productCode
 						,1
 						,1
-						,masterDataDict[drug].Code
+						,str(row.Code) if 'LAB' in str(row.Code) else 'LAB'+str(row.Code) if masterDataDict[drug].itemClass !="D" else masterDataDict[drug].Code
 						,masterDataDict[drug].GenericName
 						,masterDataDict[drug].StrengthUnit_Name
 						,masterDataDict[drug].DispensingFormDisplay
@@ -1216,7 +1224,7 @@ def updateLocalMedicines(Config):
 						,masterDataDict[drug].StorageTemperature
 						,masterDataDict[drug].StorageConditions
 						,masterDataDict[drug].AdministrationUnit
-						,1
+						,0
 						,masterDataDict[drug].group1
 						,masterDataDict[drug].group2
 						,masterDataDict[drug].Strength_Display
@@ -1243,14 +1251,14 @@ def updateLocalMedicines(Config):
 	#get the current time for this sync state
 	#save catalog sync check point for next sync
 	timiestamp=datetime.datetime.strptime(str(cursorMaster.execute("select FORMAT(GETDATE(),'yyyy-MM-dd HH:mm:ss') stamp ").fetchone().stamp),'%Y-%m-%d %H:%M:%S')- datetime.timedelta(hours=3)
-	Config.set('checkPoint','cataloglastupdate',timiestamp)
-	with open('RxDataLoad.ini', 'wb') as configfile:
+	Config.set('checkPoint','cataloglastupdate',str(timiestamp))
+	with open('RxDataLoad.ini', 'w') as configfile:
 		Config.write(configfile)
 	#print len(updatedDrugs)
-print datetime.datetime.now()
+print (datetime.datetime.now())
 #update prodcut catalog
 updateLocalMedicines(Config)
-sendDataToRemoteServer(Config)
+#sendDataToRemoteServer(Config)
 #send prodct catalog update report
 #get email addresses to contacts
 cnxnMaster = pyodbc.connect('''DRIVER={%s};
@@ -1265,10 +1273,10 @@ cnxnMaster = pyodbc.connect('''DRIVER={%s};
 				  ,Config.get('MasterDataServer','pwd')))
 cursorMaster = cnxnMaster.cursor()
 cursorMaster.execute("select [Name],[Facility_Code],[Facility_Name],[Email Address] email from [MDM-01].[MDS_PD].mdm.RxReportContacts where [Facility_Code] = '%s' "%(Config.get('HealthFacility','Code')))
-for contact in cursorMaster.fetchall():
-	sendNortification([contact.email], 'Rx Auto Product sync report from %s'%(Config.get('HealthFacility','Name')), 'Good day %s \n Please find attached file \n product syncronization report for your ACTION.'%(contact.Name),cnxnMaster.cursor(),['%s product catelog sync report.xlsx'%(Config.get('HealthFacility','Name'))])	
+#for contact in cursorMaster.fetchall():
+#	sendNortification([contact.email], 'Rx Auto Product sync report from %s'%(Config.get('HealthFacility','Name')), 'Good day %s \n Please find attached file \n product syncronization report for your ACTION.'%(contact.Name),cnxnMaster.cursor(),['%s product catelog sync report.xlsx'%(Config.get('HealthFacility','Name'))])	
 cursorMaster.close()
 cnxnMaster.close()
 #cursorFacility.close()
 #cnxnFacility.close()
-print datetime.datetime.now()
+print (datetime.datetime.now())

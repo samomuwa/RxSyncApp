@@ -192,7 +192,7 @@ class dataTransfer:
             self.logger.info(row)
             #create the new record
             #first delete the old reocrd before update
-            dltSql='delete from stg_%s where load_id=?'%(self.table)
+            dltSql='delete from stg_%s where load_id=? and FacilityCode=?'%(self.table,self.Config.get('HealthFacility','Code'))
             param=(row.load_id,)
             destCursor.execute(dltSql,param)
             if destCursor:
