@@ -14,8 +14,8 @@ from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
 import re, math
 from collections import Counter
-from  SyncOtherTables  import *
-from dataTransfer import *
+from src.SyncOtherTables  import *
+from src.dataTransfer import *
 
 #path=os.path.dirname(os.path.realpath(__file__))+'/RxDataLoad.ini'
 path=str(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__))+'/RxDataLoad.ini', os.pardir))).replace('\src','')+'/RxDataLoad.ini'
