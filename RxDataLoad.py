@@ -21,7 +21,7 @@ path=os.path.dirname(os.path.realpath(__file__))+'/RxDataLoad.ini'
 #prepare logfile
 logFileName = datetime.datetime.today().date()
 logger = logging.getLogger(str(logFileName))
-hdlr = logging.FileHandler(os.path.dirname(os.path.realpath(__file__))+'\\logs\\%s.log'%(logFileName))
+hdlr = logging.FileHandler(os.path.dirname+'\\logs\\%s.log'%(logFileName))
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
