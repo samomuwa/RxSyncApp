@@ -17,12 +17,13 @@ from collections import Counter
 from  SyncOtherTables  import *
 from dataTransfer import *
 
-path=os.path.dirname(os.path.realpath(__file__))+'/RxDataLoad.ini'
+#path=os.path.dirname(os.path.realpath(__file__))+'/RxDataLoad.ini'
+path=str(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__))+'/RxDataLoad.ini', os.pardir))).replace('\src','')
 #prepare logfile
 logFileName = datetime.datetime.today().date()
 logger = logging.getLogger(str(logFileName))
 #hdlr = logging.FileHandler(os.path.dirname(os.path.realpath(__file__))+'\\logs\\%s.log'%(logFileName))
-hdlr = logging.FileHandler('C:\\RxSyncApp\\logs\\%s.log'%(logFileName))
+hdlr = logging.FileHandler(str(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__))+'/RxDataLoad.ini', os.pardir))).replace('\src','')+'\\%s.log'%(logFileName))
 
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
