@@ -1258,7 +1258,7 @@ def updateLocalMedicines(Config):
 print (datetime.datetime.now())
 #update prodcut catalog
 updateLocalMedicines(Config)
-sendDataToRemoteServer(Config)
+#sendDataToRemoteServer(Config)
 #send prodct catalog update report
 #get email addresses to contacts
 cnxnMaster = pyodbc.connect('''DRIVER={%s};
