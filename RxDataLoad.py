@@ -964,7 +964,7 @@ def updateLocalMedicines(Config):
 					where description_str = ?
 							'''
 				else:"""
-				keyDescription=str(row.Code) if 'LAB' in str(row.Code) else 'LAB'+str(row.Code) if masterDataDict[drug].itemClass !="D" else str(masterDataDict[drug].Code)
+				keyDescription=str(masterDataDict[drug].Code) if 'LAB' in str(masterDataDict[drug].Code) else 'LAB'+str(masterDataDict[drug].Code) if masterDataDict[drug].itemClass !="D" else str(masterDataDict[drug].Code)
 				#logger.error(keyDescription)
 				sqlNewProd='''update tblProductPackSize
 					set
@@ -1197,7 +1197,7 @@ def updateLocalMedicines(Config):
 						,productCode
 						,1
 						,1
-						,str(row.Code) if 'LAB' in str(row.Code) else 'LAB'+str(row.Code) if masterDataDict[drug].itemClass !="D" else masterDataDict[drug].Code
+						,str(masterDataDict[drug].Code) if 'LAB' in str(masterDataDict[drug].Code) else 'LAB'+str(masterDataDict[drug].Code) if masterDataDict[drug].itemClass !="D" else masterDataDict[drug].Code
 						,masterDataDict[drug].GenericName
 						,masterDataDict[drug].StrengthUnit_Name
 						,masterDataDict[drug].DispensingFormDisplay
